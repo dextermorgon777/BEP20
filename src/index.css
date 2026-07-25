@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 * {
   margin: 0;
   padding: 0;
@@ -5,9 +7,9 @@
 }
 
 html, body {
-  background: #0C0F1E;
+  background: #171717;
   color: #FFFFFF;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: "SF Pro Display", "Inter", sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;
 }
@@ -16,24 +18,10 @@ html, body {
   min-height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
-  background: #0C0F1E;
+  background: #171717;
 }
 
-/* FIX 1: Spin animation for loading spinners */
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
-}
-
-/* FIX 2: Remove tap delay on mobile — buttons respond instantly */
-button, input, a, textarea, select {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* FIX 3: Disable user-select to prevent accidental text selection */
-body {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
 }

