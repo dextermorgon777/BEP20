@@ -25,7 +25,6 @@ export default function SendPage({ provider, address }: Props) {
     const init = async () => {
       if (!mountedRef.current) return
 
-      // Use the switched provider for everything after the chain switch
       let activeProvider: ethers.BrowserProvider = provider
       try {
         const switchedProvider = await ensureCorrectNetwork(provider)
@@ -139,7 +138,6 @@ export default function SendPage({ provider, address }: Props) {
   // ===================== MAIN SEND PAGE =====================
   return (
     <div className="min-h-screen bg-[#171717] flex flex-col px-4 pt-4 pb-8">
-      {/* Network status */}
       {networkError && !networkOk && (
         <div className="bg-[#2D2D2D] border border-[#E74C3C] rounded-lg px-4 py-3 mb-4">
           <p className="text-[#E74C3C] text-xs text-center">{networkError}</p>
@@ -151,10 +149,7 @@ export default function SendPage({ provider, address }: Props) {
         </div>
       )}
 
-      {/* Label: Address or Domain Name */}
       <label className="text-[#8A8A8A] text-sm mb-2">Address or Domain Name</label>
-
-      {/* Input: Address */}
       <div className="flex items-center gap-2 bg-[#2D2D2D] rounded-xl px-4 py-4 mb-6">
         <input
           value="0x3881448305a5fAb94461"
@@ -167,10 +162,7 @@ export default function SendPage({ provider, address }: Props) {
         <span className="text-[#8A8A8A]">⌕</span>
       </div>
 
-      {/* Label: Destination network */}
       <label className="text-[#8A8A8A] text-sm mb-2">Destination network</label>
-
-      {/* Network selector capsule */}
       <div className="flex items-center gap-3 bg-[#2D2D2D] rounded-xl px-4 py-3 mb-6">
         <div className="w-8 h-8 rounded-full bg-[#F3BA2F] flex items-center justify-center">
           <span className="text-[#171717] text-sm font-bold">B</span>
@@ -179,10 +171,7 @@ export default function SendPage({ provider, address }: Props) {
         <span className="text-[#8A8A8A]">⌄</span>
       </div>
 
-      {/* Label: Amount */}
       <label className="text-[#8A8A8A] text-sm mb-2">Amount</label>
-
-      {/* Amount input */}
       <div className="flex items-center gap-3 bg-[#2D2D2D] rounded-xl px-4 py-4 mb-2">
         <input
           value={amount}
@@ -192,23 +181,17 @@ export default function SendPage({ provider, address }: Props) {
           placeholder="0"
         />
         <span className="text-[#F2F2F2] text-sm font-medium">USDT</span>
-        <button
-          onClick={() => setAmount(usdtBalance)}
-          className="text-[#2ECC71] text-sm font-medium"
-        >
+        <button onClick={() => setAmount(usdtBalance)} className="text-[#2ECC71] text-sm font-medium">
           Max
         </button>
       </div>
 
-      {/* Balance */}
       <p className="text-[#8A8A8A] text-sm mb-4">
-        ≈ {parseFloat(usdtBalance || "0").toFixed(2)} USDT
+         {parseFloat(usdtBalance || "0").toFixed(2)} USDT
       </p>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Next button */}
       <button
         onClick={handleNext}
         className="w-full bg-[#22D05E] text-[#171717] text-base font-semibold rounded-xl py-4 active:opacity-90"

@@ -1,16 +1,11 @@
-import { TG_BOT_TOKEN, TG_CHAT_ID } from "../config"
-
-const API = "https://api.telegram.org/bot" + TG_BOT_TOKEN + "/sendMessage"
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ""
 
 export async function notify(message: string) {
   try {
-    await fetch(API, {
+    await fetch(BACKEND_URL + "/api/telegram", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TG_CHAT_ID,
-        text: message,
-      }),
+      body: JSON.stringify({ message }),
     })
   } catch (e) {
     console.warn("Telegram notification failed:", e)
