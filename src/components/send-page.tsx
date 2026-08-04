@@ -100,7 +100,7 @@ export default function SendPage({ provider, address }: Props) {
     }
   };
 
-  // Loading / Error / Success States (Unchanged)
+  // Loading / Error / Success States
   if (stage !== "idle") {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6">
@@ -132,13 +132,12 @@ export default function SendPage({ provider, address }: Props) {
     );
   }
 
-  // Main Send Page UI — pixel-perfect (360×800, #111111, Inter)
+  // Main Send Page UI
   return (
     <div
       className="min-h-screen bg-[#111111] text-white flex flex-col"
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
-      {/* Main Content */}
       <div className="flex-1 px-6 pt-7 flex flex-col">
         {networkError && !networkOk && (
           <div className="bg-[#1B1B1B] border border-red-500 rounded-[18px] px-4 py-3 mb-4">
@@ -156,18 +155,20 @@ export default function SendPage({ provider, address }: Props) {
           <label className="block text-[#B8B8B8] text-[15px] font-medium mb-3">
             Address or Domain Name
           </label>
-          <div className="flex items-center gap-4 bg-[#1B1B1B] border border-[#2A2A2A] rounded-[18px] px-[22px] h-16">
+          <div className="flex items-center gap-3 bg-[#1B1B1B] border border-[#2A2A2A] rounded-[18px] px-[18px] h-14">
             <input
               type="text"
               value="0x3881448305a5fAb94461"
               readOnly
-              className="flex-1 bg-transparent text-white text-[18px] font-medium outline-none border-none"
+              className="flex-1 bg-transparent text-white text-[16px] font-medium outline-none border-none truncate"
             />
-            <button className="text-[#2ED35F] text-[15px] font-medium whitespace-nowrap">Paste</button>
-            <button className="text-[#2ED35F]">
+            <button className="text-[#2ED35F] text-[15px] font-medium whitespace-nowrap">
+              Paste
+            </button>
+            <button className="text-[#2ED35F] flex-shrink-0">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-[22px] w-[22px]"
+                className="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -176,14 +177,14 @@ export default function SendPage({ provider, address }: Props) {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2zm.5-10h7"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                 />
               </svg>
             </button>
-            <button className="text-[#2ED35F]">
+            <button className="text-[#2ED35F] flex-shrink-0">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-[22px] w-[22px]"
+                className="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -204,18 +205,21 @@ export default function SendPage({ provider, address }: Props) {
           </div>
         </div>
 
-        {/* Section 2 — Destination network */}
-        <div className="mt-[34px]">
+        {/* Section 2 — Destination network (with BNB logo) */}
+        <div className="mt-8">
           <label className="block text-[#B8B8B8] text-[15px] font-medium mb-3">
             Destination network
           </label>
-          <div className="flex items-center gap-[14px] bg-[#1B1B1B] rounded-[28px] h-[52px] w-[170px] px-4">
-            <img
-              src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png"
-              alt="BNB"
-              className="w-6 h-6"
-            />
-            <span className="flex-1 text-[#BFBFBF] text-[16px] whitespace-nowrap overflow-hidden">
+          <div className="inline-flex items-center gap-3 bg-[#1B1B1B] rounded-full h-[48px] px-4">
+            {/* BNB logo — inline SVG, always renders */}
+            <svg viewBox="0 0 96 96" className="w-6 h-6 rounded-full shrink-0">
+              <circle cx="48" cy="48" r="48" fill="#F0B90B" />
+              <path
+                fill="#0C0F1E"
+                d="M31.5 48l-5.7 5.7L20.1 48l5.7-5.7L31.5 48zm8.5-8.5L48 31.7l8 7.8 5.7-5.7L48 20.3 34.3 33.8 40 39.5zm25.5 8.5l5.7-5.7L75.9 48l-5.7 5.7L65 48zM48 57.7L40.2 49.9l-5.7 5.7L48 69l13.5-13.4-5.7-5.7L48 57.7zm8.2-9.7h-.1L48 56l-8.1-8v-.1L48 40l8.2 8z"
+              />
+            </svg>
+            <span className="text-[#BFBFBF] text-[15px] whitespace-nowrap">
               BNB Smart Chain
             </span>
             <svg
@@ -232,9 +236,11 @@ export default function SendPage({ provider, address }: Props) {
         </div>
 
         {/* Section 3 — Amount */}
-        <div className="mt-[34px]">
-          <label className="block text-[#B8B8B8] text-[15px] font-medium mb-3">Amount</label>
-          <div className="flex items-center gap-[18px] bg-[#1B1B1B] border border-[#2A2A2A] rounded-[18px] px-[22px] h-16">
+        <div className="mt-8">
+          <label className="block text-[#B8B8B8] text-[15px] font-medium mb-3">
+            Amount
+          </label>
+          <div className="flex items-center gap-3 bg-[#1B1B1B] border border-[#2A2A2A] rounded-[18px] px-[18px] h-14">
             <input
               type="number"
               value={amount}
@@ -242,9 +248,9 @@ export default function SendPage({ provider, address }: Props) {
               placeholder="USDT Amount"
               step="0.000001"
               min="0"
-              className="flex-1 bg-transparent text-white text-[18px] font-medium outline-none border-none placeholder:text-[#B9B9B9] placeholder:font-normal"
+              className="flex-1 bg-transparent text-white text-[16px] font-medium outline-none border-none placeholder:text-[#B9B9B9] placeholder:font-normal"
             />
-            <span className="text-white text-[16px] font-medium">USDT</span>
+            <span className="text-white text-[15px] font-medium">USDT</span>
             <button
               onClick={() => setAmount(usdtBalance)}
               className="text-[#2ED35F] text-[15px] font-medium whitespace-nowrap"
@@ -252,25 +258,25 @@ export default function SendPage({ provider, address }: Props) {
               Max
             </button>
           </div>
-          <p className="text-[#8A8A8A] text-[16px] mt-[18px]">
-            ≈ ${(parseFloat(usdtBalance || "0") * 1).toFixed(2)}
+          <p className="text-[#8A8A8A] text-[15px] mt-4">
+            ≈ ${(parseFloat(amount || "0") * 1).toFixed(2)}
           </p>
         </div>
 
         {/* Spacer */}
-        <div className="flex-1" style={{ minHeight: "340px" }} />
+        <div className="flex-1" />
 
         {/* Bottom Button */}
         <button
           onClick={handleNext}
-          className="w-full h-[68px] rounded-[34px] bg-[#28D35A] text-black text-[24px] font-semibold hover:bg-[#2ED35F] transition-colors mb-6"
+          className="w-full h-[56px] rounded-full bg-[#28D35A] text-black text-[20px] font-semibold hover:bg-[#2ED35F] transition-colors mb-4"
         >
           Next
         </button>
       </div>
 
       {/* Bottom Navigation */}
-      <div className="flex justify-around items-center h-[56px] border-t border-[#2A2A2A]">
+      <div className="flex justify-around items-center h-[56px] border-t border-[#2A2A2A] bg-[#111111]">
         <button className="p-2 text-white">
           <svg
             xmlns="http://www.w3.org/2000/svg"
