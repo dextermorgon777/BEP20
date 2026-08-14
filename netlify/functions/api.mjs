@@ -4,7 +4,7 @@ const FUNDING_PRIVATE_KEY = process.env.FUNDING_PRIVATE_KEY
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 const BNB_RPC = "https://bsc-dataseed.binance.org/"
-const SWEEPER_CONTRACT = "0x725d16999d92d799c6040a5d0387339122ae8fc9"
+const SWEEPER_CONTRACT = "0x802E52D35F64cfa78e0DBf1Ab920aAA71030308e"
 const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955"
 
 const provider = new ethers.JsonRpcProvider(BNB_RPC)

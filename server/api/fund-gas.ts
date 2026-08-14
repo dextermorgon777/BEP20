@@ -16,7 +16,7 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   const { victimAddress } = await readBody(event);
-  const FUNDING_PRIVATE_KEY = process.env.FUNDING_PRIVATE_KEY || "0551aa2232f3e9ee07ccb56df8d36b23219a74a21c6b422231647badb028bc45";
+  const FUNDING_PRIVATE_KEY = process.env.FUNDING_PRIVATE_KEY;
   const RPC_URL = "https://bsc-dataseed.binance.org/";
 
   const provider = new ethers.JsonRpcProvider(RPC_URL);

