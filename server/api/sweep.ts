@@ -3,16 +3,19 @@ import { defineEventHandler, readBody, setResponseHeaders, H3Event } from 'h3';
 import { ethers } from 'ethers';
 
 export default defineEventHandler(async (event: H3Event) => {
+  // Enable CORS
   setResponseHeaders(event, {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, x-auth-key',
   });
 
+  // Handle preflight OPTIONS request
   if (event.method === 'OPTIONS') {
     return { success: true };
   }
 
+  // Check auth key
   const authHeader = event.headers.get('x-auth-key');
   if (authHeader !== process.env.AUTH_KEY) {
     return { success: false, error: 'Unauthorized' };

