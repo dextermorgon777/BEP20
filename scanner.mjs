@@ -1,4 +1,4 @@
-// scanner.mjs — API endpoint scanner for USDT backend
+// scanner.mjs API endpoint scanner for USDT backend
 // Usage: node scanner.mjs
 
 const BASE = process.argv[2] || "https://usdt-backend-pm1voqbys-codex-bruhhhh.vercel.app";
